@@ -3,7 +3,6 @@ import logging
 import httpx
 
 from telegram import Update
-
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -15,12 +14,6 @@ from keyboards import (
     keyboard_start,
     keyboard_confirm,
     keyboard_wait,
-    keyboard_road,
-    keyboard_hotel,
-    keyboard_aerotube,
-    keyboard_football,
-    keyboard_lounge,
-    keyboard_final,
 )
 
 from messages import MESSAGES
@@ -35,7 +28,7 @@ logging.basicConfig(
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 OPERATOR_TOKEN = os.getenv("OPERATOR_TOKEN")
-OPERATOR_CHAT_ID = os.getenv("OPERATOR_CHAT_ID")
+OPERATOR_ID = os.getenv("OPERATOR_ID")
 
 
 START_TEXT = """
@@ -57,10 +50,7 @@ START_TEXT = """
 """
 
 
-async def send_operator(text):
-
-    if not OPERATOR_TOKEN or not OPERATOR_CHAT_ID:
-        return
+async def notify_operator(text):
 
     url = f"https://api.telegram.org/bot{OPERATOR_TOKEN}/sendMessage"
 
@@ -69,10 +59,11 @@ async def send_operator(text):
         await client.post(
             url,
             json={
-                "chat_id": OPERATOR_CHAT_ID,
+                "chat_id": OPERATOR_ID,
                 "text": text
             }
         )
+
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -81,6 +72,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         START_TEXT,
         reply_markup=keyboard_start
     )
+
 
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -92,18 +84,27 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if query.data == "document":
 
+        await notify_operator(
+            "🟢 АГЕНТ ПРОСНУЛСЯ\n\n"
+            "Нажата кнопка:\n"
+            "📄 ПОЛУЧИТЬ ПЕРВЫЙ ДОКУМЕНТ"
+        )
+
+
         await query.edit_message_text(
             MESSAGES["document"],
             reply_markup=keyboard_confirm
         )
 
 
-        await send_operator(
-            "🟢 Агент получил первый документ и ожидает подтверждения."
-        )
-
 
     elif query.data == "confirm":
+
+        await notify_operator(
+            "📍 АГЕНТ ПОДТВЕРДИЛ ПОЛУЧЕНИЕ\n\n"
+            "Первый документ принят."
+        )
+
 
         await query.edit_message_text(
             MESSAGES["confirm"],
@@ -111,67 +112,17 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-        await send_operator(
-            "🟢 Подтверждение получения получено от агента."
-        )
-
 
     elif query.data == "wait":
 
+        await notify_operator(
+            "🛰 АГЕНТ В РЕЖИМЕ ОЖИДАНИЯ\n\n"
+            "Готов получать дальнейшие инструкции."
+        )
+
+
         await query.edit_message_text(
             MESSAGES["wait"]
-        )
-
-        await query.message.reply_text(
-            MESSAGES["road"],
-            reply_markup=keyboard_road
-        )
-
-
-    elif query.data == "road":
-
-        await query.message.reply_text(
-            MESSAGES["hotel"],
-            reply_markup=keyboard_hotel
-        )
-
-
-    elif query.data == "hotel":
-
-        await query.message.reply_text(
-            MESSAGES["aerotube"],
-            reply_markup=keyboard_aerotube
-        )
-
-
-    elif query.data == "aerotube":
-
-        await query.message.reply_text(
-            MESSAGES["football"],
-            reply_markup=keyboard_football
-        )
-
-
-    elif query.data == "football":
-
-        await query.message.reply_text(
-            MESSAGES["lounge"],
-            reply_markup=keyboard_lounge
-        )
-
-
-    elif query.data == "lounge":
-
-        await query.message.reply_text(
-            MESSAGES["final"],
-            reply_markup=keyboard_final
-        )
-
-
-    elif query.data == "final":
-
-        await query.message.reply_text(
-            MESSAGES["final"]
         )
 
 
