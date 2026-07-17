@@ -26,9 +26,8 @@ logging.basicConfig(
 
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-
-OPERATOR_TOKEN = os.getenv("OPERATOR_TOKEN")
-OPERATOR_ID = os.getenv("OPERATOR_ID")
+OPERATOR_BOT_TOKEN = os.getenv("OPERATOR_BOT_TOKEN")
+OPERATOR_CHAT_ID = os.getenv("OPERATOR_CHAT_ID")
 
 
 START_TEXT = """
@@ -52,14 +51,13 @@ START_TEXT = """
 
 async def notify_operator(text):
 
-    url = f"https://api.telegram.org/bot{OPERATOR_TOKEN}/sendMessage"
+    url = f"https://api.telegram.org/bot{OPERATOR_BOT_TOKEN}/sendMessage"
 
     async with httpx.AsyncClient() as client:
-
         await client.post(
             url,
             json={
-                "chat_id": OPERATOR_ID,
+                "chat_id": OPERATOR_CHAT_ID,
                 "text": text
             }
         )
@@ -78,16 +76,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     query = update.callback_query
-
     await query.answer()
+
+
+    user = query.from_user
+
+    user_info = (
+        f"👤 Агент нажал кнопку\n\n"
+        f"Имя: {user.first_name}\n"
+        f"ID: {user.id}\n"
+        f"Username: @{user.username}"
+    )
 
 
     if query.data == "document":
 
         await notify_operator(
-            "🟢 АГЕНТ ПРОСНУЛСЯ\n\n"
-            "Нажата кнопка:\n"
-            "📄 ПОЛУЧИТЬ ПЕРВЫЙ ДОКУМЕНТ"
+            user_info +
+            "\n\n📄 Получен первый документ"
         )
 
 
@@ -97,12 +103,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-
     elif query.data == "confirm":
 
         await notify_operator(
-            "📍 АГЕНТ ПОДТВЕРДИЛ ПОЛУЧЕНИЕ\n\n"
-            "Первый документ принят."
+            user_info +
+            "\n\n✅ Подтверждение получения"
         )
 
 
@@ -112,12 +117,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-
     elif query.data == "wait":
 
         await notify_operator(
-            "🛰 АГЕНТ В РЕЖИМЕ ОЖИДАНИЯ\n\n"
-            "Готов получать дальнейшие инструкции."
+            user_info +
+            "\n\n🛰 Ожидание дальнейших инструкций"
         )
 
 
