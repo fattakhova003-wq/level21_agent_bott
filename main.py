@@ -1,7 +1,9 @@
 import os
 import logging
+import httpx
 
 from telegram import Update
+
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -32,6 +34,9 @@ logging.basicConfig(
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
+OPERATOR_TOKEN = os.getenv("OPERATOR_TOKEN")
+OPERATOR_CHAT_ID = os.getenv("OPERATOR_CHAT_ID")
+
 
 START_TEXT = """
 🔐 LEVEL 21 SYSTEM
@@ -52,6 +57,24 @@ START_TEXT = """
 """
 
 
+async def send_operator(text):
+
+    if not OPERATOR_TOKEN or not OPERATOR_CHAT_ID:
+        return
+
+    url = f"https://api.telegram.org/bot{OPERATOR_TOKEN}/sendMessage"
+
+    async with httpx.AsyncClient() as client:
+
+        await client.post(
+            url,
+            json={
+                "chat_id": OPERATOR_CHAT_ID,
+                "text": text
+            }
+        )
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
@@ -63,6 +86,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     query = update.callback_query
+
     await query.answer()
 
 
@@ -74,11 +98,21 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+        await send_operator(
+            "🟢 Агент получил первый документ и ожидает подтверждения."
+        )
+
+
     elif query.data == "confirm":
 
         await query.edit_message_text(
             MESSAGES["confirm"],
             reply_markup=keyboard_wait
+        )
+
+
+        await send_operator(
+            "🟢 Подтверждение получения получено от агента."
         )
 
 
